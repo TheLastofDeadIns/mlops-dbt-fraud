@@ -1,0 +1,84 @@
+version: 2
+
+unit_tests:
+  - name: test_fraud_by_category_rates_and_rank
+    description: fraud_rate считается в процентах от числа транзакций категории, ранг 1 у категории с большим fraud_rate.
+    model: mart_fraud_by_category
+    given:
+      - input: ref('int_transactions_enriched')
+        rows:
+          - {transaction_id: "t1", category: "travel", amount: 100, is_fraud: 1}
+          - {transaction_id: "t2", category: "travel", amount: 50, is_fraud: 0}
+          - {transaction_id: "t3", category: "travel", amount: 30, is_fraud: 0}
+          - {transaction_id: "t4", category: "travel", amount: 20, is_fraud: 0}
+          - {transaction_id: "t5", category: "home", amount: 10, is_fraud: 0}
+          - {transaction_id: "t6", category: "home", amount: 30, is_fraud: 0}
+    expect:
+      rows:
+        - {category: "travel", txn_count: 4, fraud_txn_count: 1, legit_txn_count: 3, fraud_rate: 25.0, total_amount: 200, fraud_amount: 100, fraud_amount_share_pct: 50.0, share_of_all_fraud_pct: 100.0, fraud_rate_rank: 1}
+        - {category: "home", txn_count: 2, fraud_txn_count: 0, legit_txn_count: 2, fraud_rate: 0.0, total_amount: 40, fraud_amount: 0, fraud_amount_share_pct: 0.0, share_of_all_fraud_pct: 0.0, fraud_rate_rank: 2}
+
+  - name: test_customer_risk_segments
+    description: >
+      Сегментация клиентов: HIGH при fraud_rate не ниже порога, MEDIUM при любом фроде ниже порога, LOW без фрода.
+      Порог переопределён на 40 процентов, чтобы хватило нескольких строк.
+    model: mart_customer_risk_profile
+    overrides:
+      vars:
+        high_risk_fraud_rate_pct: 40
+    given:
+      - input: ref('int_transactions_enriched')
+        rows:
+          - {customer_id: "c_high", first_name: "Ann", last_name: "Lee", transaction_time: "2020-01-01 10:00:00", transaction_date: "2020-01-01", amount: 10, is_fraud: 1}
+          - {customer_id: "c_high", first_name: "Ann", last_name: "Lee", transaction_time: "2020-01-02 10:00:00", transaction_date: "2020-01-02", amount: 20, is_fraud: 0}
+          - {customer_id: "c_medium", first_name: "Bob", last_name: "Ray", transaction_time: "2020-01-01 10:00:00", transaction_date: "2020-01-01", amount: 10, is_fraud: 1}
+          - {customer_id: "c_medium", first_name: "Bob", last_name: "Ray", transaction_time: "2020-01-01 12:00:00", transaction_date: "2020-01-01", amount: 10, is_fraud: 0}
+          - {customer_id: "c_medium", first_name: "Bob", last_name: "Ray", transaction_time: "2020-01-03 12:00:00", transaction_date: "2020-01-03", amount: 10, is_fraud: 0}
+          - {customer_id: "c_low", first_name: "Eve", last_name: "Fox", transaction_time: "2020-01-01 10:00:00", transaction_date: "2020-01-01", amount: 5, is_fraud: 0}
+          - {customer_id: "c_low", first_name: "Eve", last_name: "Fox", transaction_time: "2020-01-05 10:00:00", transaction_date: "2020-01-05", amount: 15, is_fraud: 0}
+    expect:
+      rows:
+        - {customer_id: "c_high", customer_name: "Ann Lee", txn_count: 2, active_days: 2, fraud_txn_count: 1, fraud_rate: 50.0, avg_amount: 15.0, customer_lifetime_days: 1, risk_segment: "HIGH"}
+        - {customer_id: "c_medium", customer_name: "Bob Ray", txn_count: 3, active_days: 2, fraud_txn_count: 1, fraud_rate: 33.3333, avg_amount: 10.0, customer_lifetime_days: 2, risk_segment: "MEDIUM"}
+        - {customer_id: "c_low", customer_name: "Eve Fox", txn_count: 2, active_days: 2, fraud_txn_count: 0, fraud_rate: 0.0, avg_amount: 10.0, customer_lifetime_days: 4, risk_segment: "LOW"}
+
+  - name: test_hourly_high_risk_window
+    description: Окно отмечается как рискованное, если его fraud_rate выше общего не меньше чем в high_risk_window_lift раз.
+    model: mart_hourly_fraud_pattern
+    overrides:
+      vars:
+        high_risk_window_lift: 1.5
+    given:
+      - input: ref('int_transactions_enriched')
+        rows:
+          - {transaction_id: "t1", day_of_week: 1, day_name: "Monday", transaction_hour: 23, day_part: "night", amount: 500, is_fraud: 1}
+          - {transaction_id: "t2", day_of_week: 1, day_name: "Monday", transaction_hour: 23, day_part: "night", amount: 300, is_fraud: 1}
+          - {transaction_id: "t3", day_of_week: 1, day_name: "Monday", transaction_hour: 10, day_part: "morning", amount: 40, is_fraud: 0}
+          - {transaction_id: "t4", day_of_week: 1, day_name: "Monday", transaction_hour: 10, day_part: "morning", amount: 60, is_fraud: 0}
+    expect:
+      rows:
+        - {day_of_week: 1, transaction_hour: 23, txn_count: 2, fraud_txn_count: 2, fraud_rate: 100.0, overall_fraud_rate: 50.0, fraud_rate_lift: 2.0, is_high_risk_window: 1, avg_fraud_amount: 400.0, fraud_rate_rank: 1}
+        - {day_of_week: 1, transaction_hour: 10, txn_count: 2, fraud_txn_count: 0, fraud_rate: 0.0, overall_fraud_rate: 50.0, fraud_rate_lift: 0.0, is_high_risk_window: 0, avg_fraud_amount: null, fraud_rate_rank: 2}
+
+  - name: test_merchant_main_category_and_suspicious_flag
+    description: >
+      Основная категория мерчанта это самая частая, флаг is_suspicious ставится при fraud_rate выше общего
+      в suspicious_merchant_lift раз и минимальном числе фродов.
+    model: mart_merchant_analytics
+    overrides:
+      vars:
+        suspicious_merchant_lift: 1.5
+        suspicious_merchant_min_fraud_txn: 2
+    given:
+      - input: ref('int_transactions_enriched')
+        rows:
+          - {transaction_id: "t1", merchant_name: "Shady Shop", category: "travel", customer_id: "c1", us_state: "NY", transaction_date: "2020-01-01", amount: 100, is_fraud: 1}
+          - {transaction_id: "t2", merchant_name: "Shady Shop", category: "travel", customer_id: "c2", us_state: "NJ", transaction_date: "2020-01-02", amount: 200, is_fraud: 1}
+          - {transaction_id: "t3", merchant_name: "Shady Shop", category: "misc_net", customer_id: "c1", us_state: "NY", transaction_date: "2020-01-03", amount: 50, is_fraud: 0}
+          - {transaction_id: "t4", merchant_name: "Corner Store", category: "grocery_pos", customer_id: "c3", us_state: "TX", transaction_date: "2020-01-01", amount: 30, is_fraud: 0}
+          - {transaction_id: "t5", merchant_name: "Corner Store", category: "grocery_pos", customer_id: "c3", us_state: "TX", transaction_date: "2020-01-04", amount: 20, is_fraud: 0}
+          - {transaction_id: "t6", merchant_name: "Corner Store", category: "grocery_pos", customer_id: "c4", us_state: "TX", transaction_date: "2020-01-05", amount: 10, is_fraud: 0}
+    expect:
+      rows:
+        - {merchant_name: "Shady Shop", main_category: "travel", category_count: 2, txn_count: 3, turnover: 350, unique_customers: 2, unique_customer_states: 2, fraud_txn_count: 2, fraud_rate: 66.6667, overall_fraud_rate: 33.3333, fraud_rate_lift: 2.0, is_suspicious: 1, turnover_rank: 1}
+        - {merchant_name: "Corner Store", main_category: "grocery_pos", category_count: 1, txn_count: 3, turnover: 60, unique_customers: 2, unique_customer_states: 1, fraud_txn_count: 0, fraud_rate: 0.0, overall_fraud_rate: 33.3333, fraud_rate_lift: 0.0, is_suspicious: 0, turnover_rank: 2}

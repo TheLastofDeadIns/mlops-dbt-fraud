@@ -1,0 +1,610 @@
+# прогон проекта на Kaggle (CPU, Linux), ClickHouse 26.8.36.3, данные fraudTrain.csv Sparkov, 1 296 675 строк
+# каждый шаг начинается со строки "===== имя: exit код, время", дальше вывод команды без изменений
+
+===== clickhouse_check: exit 0, 0.1s
+26.8.36.3	Etc/UTC
+
+===== venv: exit 0, 25.3s
+Core:
+  - installed: 1.12.6
+  - latest:    1.12.6 - Up to date!
+
+Plugins:
+  - clickhouse: 1.10.3 - Up to date!
+
+
+18:58:26  dbt v2 is available, and is the default for new installations. This is dbt Core v1.
+          New project - install v2: https://docs.getdbt.com/docs/local/install-dbt?utm_source=dbt-cli
+          Existing v1 project - upgrade guide: https://docs.getdbt.com/docs/dbt-versions/dbt-upgrade/upgrading-to-v2?utm_source=dbt-cli
+sqlfluff, version 4.5.0
+pre-commit 4.7.0
+Python 3.12.3
+
+===== load_data: exit 0, 12.9s
+/tmp/dbtenv/bin/python scripts/load_transactions.py --csv /kaggle/input/datasets/kartik2112/fraud-detection/fraudTrain.csv --recreate
+загружено 200000 строк
+загружено 400000 строк
+загружено 600000 строк
+загружено 800000 строк
+загружено 1000000 строк
+загружено 1200000 строк
+загружено 1296675 строк
+готово за 9.7 с, в transactions_db.transactions сейчас 1296675 строк
+
+===== source_check: exit 0, 0.1s
+Row 1:
+──────
+count():                    1296675 -- 1.30 million
+countIf(equals(target, 1)): 7506
+min(transaction_time):      2019-01-01 00:00:18
+max(transaction_time):      2020-06-21 12:13:37
+uniqExact(us_state):        51
+uniqExact(cat_id):          14
+
+===== source_schema: exit 0, 0.1s
+transaction_time	DateTime					
+merch	String					
+cat_id	String					
+amount	Float64					
+name_1	String					
+name_2	String					
+gender	String					
+us_state	String					
+lat	Float64					
+lon	Float64					
+merchant_lat	Float64					
+merchant_lon	Float64					
+target	UInt8					
+
+===== dbt_debug: exit 0, 4.9s
+dbt debug
+18:58:45  Running with dbt=1.12.6
+18:58:45  dbt version: 1.12.6
+18:58:45  python version: 3.12.3
+18:58:45  python path: /tmp/dbtenv/bin/python
+18:58:45  os info: Linux-6.18.55+-x86_64-with-glibc2.39
+18:58:45  Using profiles dir at /tmp/repo/dbt
+18:58:45  Using profiles.yml file at /tmp/repo/dbt/profiles.yml
+18:58:45  Using dbt_project.yml file at /tmp/repo/dbt/dbt_project.yml
+18:58:45  adapter type: clickhouse
+18:58:45  adapter version: 1.10.3
+18:58:45  Configuration:
+18:58:45    profiles.yml file [OK found and valid]
+18:58:45    dbt_project.yml file [OK found and valid]
+18:58:45  Required dependencies:
+18:58:45   - git [OK found]
+
+18:58:45  Connection:
+18:58:45    driver: http
+18:58:45    host: localhost
+18:58:45    port: 8123
+18:58:45    user: default
+18:58:45    schema: fraud_dbt
+18:58:45    retries: 1
+18:58:45    cluster: None
+18:58:45    database_engine: None
+18:58:45    cluster_mode: False
+18:58:45    secure: False
+18:58:45    verify: True
+18:58:45    client_cert: None
+18:58:45    client_cert_key: None
+18:58:45    connect_timeout: 30
+18:58:45    send_receive_timeout: 600
+18:58:45    sync_request_timeout: 5
+18:58:45    compress_block_size: 1048576
+18:58:45    compression: 
+18:58:45    check_exchange: True
+18:58:45    custom_settings: None
+18:58:45    use_lw_deletes: False
+18:58:45    allow_automatic_deduplication: False
+18:58:45    tcp_keepalive: False
+18:58:45    reuse_connections: True
+18:58:45    server_host_name: None
+18:58:45  Registered adapter: clickhouse=1.10.3
+18:58:46    Connection test: [OK connection ok]
+
+18:58:46  All checks passed!
+
+===== dbt_deps: exit 0, 4.8s
+dbt deps
+18:58:49  Running with dbt=1.12.6
+18:58:50  Installing dbt-labs/dbt_utils
+18:58:50  Installed from version 1.4.1
+18:58:50  Up to date!
+18:58:50  Installing godatadriven/dbt_date
+18:58:50  Installed from version 0.21.0
+18:58:50  Up to date!
+18:58:50  Installing metaplane/dbt_expectations
+18:58:50  Installed from version 0.10.10
+18:58:50  Up to date!
+
+===== dbt_seed: exit 0, 13.4s
+dbt seed
+18:58:54  Running with dbt=1.12.6
+18:58:54  Registered adapter: clickhouse=1.10.3
+18:58:54  Unable to do partial parsing because saved manifest not found. Starting full parse.
+18:59:02  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:02  
+18:59:02  Concurrency: 4 threads (target='dev')
+18:59:02  
+18:59:03  1 of 1 START seed file `fraud_dbt_seeds`.`states` .............................. [RUN]
+18:59:03  1 of 1 OK loaded seed file fraud_dbt_seeds.states .............................. [INSERT 51 in 0.37s]
+18:59:03  
+18:59:03  Finished running 1 seed in 0 hours 0 minutes and 1.02 seconds (1.02s).
+18:59:04  
+18:59:04  Completed successfully
+18:59:04  
+18:59:04  Done. PASS=1 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1
+
+===== dbt_run: exit 0, 13.9s
+dbt run
+18:59:08  Running with dbt=1.12.6
+18:59:08  Registered adapter: clickhouse=1.10.3
+18:59:09  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:09  
+18:59:09  Concurrency: 4 threads (target='dev')
+18:59:09  
+18:59:10  1 of 8 START sql table model `fraud_dbt_staging`.`stg_transactions` ............ [RUN]
+18:59:15  1 of 8 OK created sql table model `fraud_dbt_staging`.`stg_transactions` ....... [OK in 5.29s]
+18:59:15  2 of 8 START sql view model `fraud_dbt_intermediate`.`int_transactions_enriched`  [RUN]
+18:59:15  2 of 8 OK created sql view model `fraud_dbt_intermediate`.`int_transactions_enriched`  [OK in 0.07s]
+18:59:15  3 of 8 START sql table model `fraud_dbt_marts`.`mart_customer_risk_profile` .... [RUN]
+18:59:15  4 of 8 START sql table model `fraud_dbt_marts`.`mart_daily_state_metrics` ...... [RUN]
+18:59:15  5 of 8 START sql table model `fraud_dbt_marts`.`mart_fraud_by_category` ........ [RUN]
+18:59:15  6 of 8 START sql table model `fraud_dbt_marts`.`mart_fraud_by_state` ........... [RUN]
+18:59:16  5 of 8 OK created sql table model `fraud_dbt_marts`.`mart_fraud_by_category` ... [OK in 0.44s]
+18:59:16  7 of 8 START sql table model `fraud_dbt_marts`.`mart_hourly_fraud_pattern` ..... [RUN]
+18:59:16  6 of 8 OK created sql table model `fraud_dbt_marts`.`mart_fraud_by_state` ...... [OK in 1.20s]
+18:59:17  8 of 8 START sql table model `fraud_dbt_marts`.`mart_merchant_analytics` ....... [RUN]
+18:59:17  4 of 8 OK created sql table model `fraud_dbt_marts`.`mart_daily_state_metrics` . [OK in 1.40s]
+18:59:17  7 of 8 OK created sql table model `fraud_dbt_marts`.`mart_hourly_fraud_pattern`  [OK in 0.96s]
+18:59:17  3 of 8 OK created sql table model `fraud_dbt_marts`.`mart_customer_risk_profile`  [OK in 1.49s]
+18:59:17  8 of 8 OK created sql table model `fraud_dbt_marts`.`mart_merchant_analytics` .. [OK in 0.76s]
+18:59:17  
+18:59:17  Finished running 7 table models, 1 view model in 0 hours 0 minutes and 7.88 seconds (7.88s).
+18:59:18  
+18:59:18  Completed successfully
+18:59:18  
+18:59:18  Done. PASS=8 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=8
+
+===== dbt_test: exit 0, 11.8s
+dbt test
+18:59:21  Running with dbt=1.12.6
+18:59:21  Registered adapter: clickhouse=1.10.3
+18:59:23  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:23  
+18:59:23  Concurrency: 4 threads (target='dev')
+18:59:23  
+18:59:23  1 of 114 START test accepted_values_int_transactions_enriched_region__Northeast__Midwest__South__West  [RUN]
+18:59:23  2 of 114 START test accepted_values_mart_customer_risk_profile_risk_segment__HIGH__MEDIUM__LOW  [RUN]
+18:59:23  3 of 114 START test accepted_values_mart_fraud_by_category_category__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [RUN]
+18:59:23  4 of 114 START test accepted_values_mart_hourly_fraud_pattern_day_name__Monday__Tuesday__Wednesday__Thursday__Friday__Saturday__Sunday  [RUN]
+18:59:24  2 of 114 PASS accepted_values_mart_customer_risk_profile_risk_segment__HIGH__MEDIUM__LOW  [PASS in 0.35s]
+18:59:24  3 of 114 PASS accepted_values_mart_fraud_by_category_category__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [PASS in 0.38s]
+18:59:24  4 of 114 PASS accepted_values_mart_hourly_fraud_pattern_day_name__Monday__Tuesday__Wednesday__Thursday__Friday__Saturday__Sunday  [PASS in 0.38s]
+18:59:24  5 of 114 START test accepted_values_mart_hourly_fraud_pattern_is_high_risk_window__False__0__1  [RUN]
+18:59:24  6 of 114 START test accepted_values_mart_merchant_analytics_is_suspicious__False__0__1  [RUN]
+18:59:24  7 of 114 START test accepted_values_states_region__Northeast__Midwest__South__West  [RUN]
+18:59:24  1 of 114 PASS accepted_values_int_transactions_enriched_region__Northeast__Midwest__South__West  [PASS in 0.41s]
+18:59:24  8 of 114 START test accepted_values_stg_transactions_amount_bucket__micro__small__medium__large__very_large  [RUN]
+18:59:24  5 of 114 PASS accepted_values_mart_hourly_fraud_pattern_is_high_risk_window__False__0__1  [PASS in 0.21s]
+18:59:24  6 of 114 PASS accepted_values_mart_merchant_analytics_is_suspicious__False__0__1  [PASS in 0.24s]
+18:59:24  7 of 114 PASS accepted_values_states_region__Northeast__Midwest__South__West ... [PASS in 0.24s]
+18:59:24  9 of 114 START test accepted_values_stg_transactions_category__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [RUN]
+18:59:24  10 of 114 START test accepted_values_stg_transactions_day_name__Monday__Tuesday__Wednesday__Thursday__Friday__Saturday__Sunday  [RUN]
+18:59:24  11 of 114 START test accepted_values_stg_transactions_day_part__night__morning__afternoon__evening  [RUN]
+18:59:24  8 of 114 PASS accepted_values_stg_transactions_amount_bucket__micro__small__medium__large__very_large  [PASS in 0.19s]
+18:59:24  12 of 114 START test accepted_values_stg_transactions_gender__M__F ............. [RUN]
+18:59:24  9 of 114 PASS accepted_values_stg_transactions_category__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [PASS in 0.19s]
+18:59:24  10 of 114 PASS accepted_values_stg_transactions_day_name__Monday__Tuesday__Wednesday__Thursday__Friday__Saturday__Sunday  [PASS in 0.19s]
+18:59:24  11 of 114 PASS accepted_values_stg_transactions_day_part__night__morning__afternoon__evening  [PASS in 0.19s]
+18:59:24  15 of 114 START test accepted_values_stg_transactions_is_weekend__False__0__1 .. [RUN]
+18:59:24  14 of 114 START test accepted_values_stg_transactions_is_large_amount__False__0__1  [RUN]
+18:59:24  13 of 114 START test accepted_values_stg_transactions_is_fraud__False__0__1 .... [RUN]
+18:59:24  12 of 114 PASS accepted_values_stg_transactions_gender__M__F ................... [PASS in 0.14s]
+18:59:24  16 of 114 START test assert_fraud_rate_bounds .................................. [RUN]
+18:59:24  13 of 114 PASS accepted_values_stg_transactions_is_fraud__False__0__1 .......... [PASS in 0.10s]
+18:59:24  15 of 114 PASS accepted_values_stg_transactions_is_weekend__False__0__1 ........ [PASS in 0.11s]
+18:59:24  14 of 114 PASS accepted_values_stg_transactions_is_large_amount__False__0__1 ... [PASS in 0.11s]
+18:59:24  17 of 114 START test assert_marts_reconcile_with_staging ....................... [RUN]
+18:59:24  18 of 114 START test assert_no_negative_amounts ................................ [RUN]
+18:59:24  19 of 114 START test assert_p95_within_median_and_max .......................... [RUN]
+18:59:24  16 of 114 PASS assert_fraud_rate_bounds ........................................ [PASS in 0.09s]
+18:59:24  20 of 114 START test assert_risk_segment_matches_fraud_history ................. [RUN]
+18:59:24  18 of 114 PASS assert_no_negative_amounts ...................................... [PASS in 0.06s]
+18:59:24  21 of 114 START test dbt_expectations_expect_column_distinct_count_to_equal_mart_customer_risk_profile_risk_segment__3  [RUN]
+18:59:24  19 of 114 PASS assert_p95_within_median_and_max ................................ [PASS in 0.08s]
+18:59:24  22 of 114 START test dbt_expectations_expect_column_mean_to_be_between_stg_transactions_is_fraud__0_05__0  [RUN]
+18:59:24  17 of 114 PASS assert_marts_reconcile_with_staging ............................. [PASS in 0.14s]
+18:59:24  20 of 114 PASS assert_risk_segment_matches_fraud_history ....................... [PASS in 0.12s]
+18:59:24  23 of 114 START test dbt_expectations_expect_column_pair_values_A_to_be_greater_than_B_mart_daily_state_metrics_max_amount__p95_amount__True  [RUN]
+18:59:24  24 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_customer_risk_profile_fraud_rate__100__0  [RUN]
+18:59:24  21 of 114 PASS dbt_expectations_expect_column_distinct_count_to_equal_mart_customer_risk_profile_risk_segment__3  [PASS in 0.11s]
+18:59:25  25 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_fraud_rate__100__0  [RUN]
+18:59:25  22 of 114 PASS dbt_expectations_expect_column_mean_to_be_between_stg_transactions_is_fraud__0_05__0  [PASS in 0.12s]
+18:59:25  26 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_large_txn_share_pct__100__0  [RUN]
+18:59:25  23 of 114 PASS dbt_expectations_expect_column_pair_values_A_to_be_greater_than_B_mart_daily_state_metrics_max_amount__p95_amount__True  [PASS in 0.11s]
+18:59:25  24 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_customer_risk_profile_fraud_rate__100__0  [PASS in 0.13s]
+18:59:25  27 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_txn_count__1  [RUN]
+18:59:25  28 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_fraud_amount_share_pct__100__0  [RUN]
+18:59:25  25 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_fraud_rate__100__0  [PASS in 0.10s]
+18:59:25  26 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_large_txn_share_pct__100__0  [PASS in 0.10s]
+18:59:25  29 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_fraud_rate__100__0  [RUN]
+18:59:25  30 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_share_of_all_fraud_pct__100__0  [RUN]
+18:59:25  27 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_daily_state_metrics_txn_count__1  [PASS in 0.10s]
+18:59:25  31 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_state_fraud_customer_share_pct__100__0  [RUN]
+18:59:25  28 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_fraud_amount_share_pct__100__0  [PASS in 0.11s]
+18:59:25  29 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_fraud_rate__100__0  [PASS in 0.08s]
+18:59:25  32 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_state_fraud_rate__100__0  [RUN]
+18:59:25  33 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_day_of_week__7__1  [RUN]
+18:59:25  30 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_category_share_of_all_fraud_pct__100__0  [PASS in 0.09s]
+18:59:25  31 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_state_fraud_customer_share_pct__100__0  [PASS in 0.09s]
+18:59:25  34 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_fraud_rate__100__0  [RUN]
+18:59:25  35 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_transaction_hour__23__0  [RUN]
+18:59:25  32 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_fraud_by_state_fraud_rate__100__0  [PASS in 0.09s]
+18:59:25  33 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_day_of_week__7__1  [PASS in 0.11s]
+18:59:25  36 of 114 START test dbt_expectations_expect_column_values_to_be_between_mart_merchant_analytics_fraud_rate__100__0  [RUN]
+18:59:25  37 of 114 START test dbt_expectations_expect_column_values_to_be_between_stg_transactions_customer_merchant_distance_km__20040__0  [RUN]
+18:59:25  34 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_fraud_rate__100__0  [PASS in 0.10s]
+18:59:25  35 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_hourly_fraud_pattern_transaction_hour__23__0  [PASS in 0.10s]
+18:59:25  38 of 114 START test dbt_expectations_expect_column_values_to_be_between_stg_transactions_day_of_week__7__1  [RUN]
+18:59:25  39 of 114 START test dbt_expectations_expect_column_values_to_be_between_stg_transactions_transaction_hour__23__0  [RUN]
+18:59:25  36 of 114 PASS dbt_expectations_expect_column_values_to_be_between_mart_merchant_analytics_fraud_rate__100__0  [PASS in 0.12s]
+18:59:25  37 of 114 PASS dbt_expectations_expect_column_values_to_be_between_stg_transactions_customer_merchant_distance_km__20040__0  [PASS in 0.12s]
+18:59:25  40 of 114 START test dbt_expectations_expect_compound_columns_to_be_unique_mart_hourly_fraud_pattern_day_of_week__transaction_hour  [RUN]
+18:59:25  41 of 114 START test dbt_expectations_expect_table_row_count_to_be_between_mart_fraud_by_state_51__1  [RUN]
+18:59:25  38 of 114 PASS dbt_expectations_expect_column_values_to_be_between_stg_transactions_day_of_week__7__1  [PASS in 0.10s]
+18:59:25  39 of 114 PASS dbt_expectations_expect_column_values_to_be_between_stg_transactions_transaction_hour__23__0  [PASS in 0.14s]
+18:59:25  42 of 114 START test dbt_expectations_expect_table_row_count_to_be_between_mart_hourly_fraud_pattern_168__1  [RUN]
+18:59:25  43 of 114 START test dbt_expectations_expect_table_row_count_to_be_between_stg_transactions_1  [RUN]
+18:59:25  40 of 114 PASS dbt_expectations_expect_compound_columns_to_be_unique_mart_hourly_fraud_pattern_day_of_week__transaction_hour  [PASS in 0.14s]
+18:59:25  41 of 114 PASS dbt_expectations_expect_table_row_count_to_be_between_mart_fraud_by_state_51__1  [PASS in 0.15s]
+18:59:25  44 of 114 START test dbt_expectations_expect_table_row_count_to_equal_mart_fraud_by_category_14  [RUN]
+18:59:25  45 of 114 START test dbt_utils_accepted_range_mart_daily_state_metrics_avg_amount__False__0  [RUN]
+18:59:25  42 of 114 PASS dbt_expectations_expect_table_row_count_to_be_between_mart_hourly_fraud_pattern_168__1  [PASS in 0.09s]
+18:59:25  43 of 114 PASS dbt_expectations_expect_table_row_count_to_be_between_stg_transactions_1  [PASS in 0.11s]
+18:59:25  46 of 114 START test dbt_utils_accepted_range_mart_merchant_analytics_turnover__False__0  [RUN]
+18:59:25  47 of 114 START test dbt_utils_accepted_range_stg_transactions_amount__False__0  [RUN]
+18:59:25  44 of 114 PASS dbt_expectations_expect_table_row_count_to_equal_mart_fraud_by_category_14  [PASS in 0.11s]
+18:59:25  45 of 114 PASS dbt_utils_accepted_range_mart_daily_state_metrics_avg_amount__False__0  [PASS in 0.11s]
+18:59:25  48 of 114 START test dbt_utils_equal_rowcount_int_transactions_enriched_ref_stg_transactions_  [RUN]
+18:59:25  49 of 114 START test dbt_utils_expression_is_true_mart_customer_risk_profile_fraud_txn_count_txn_count_and_first_txn_at_last_txn_at  [RUN]
+18:59:25  46 of 114 PASS dbt_utils_accepted_range_mart_merchant_analytics_turnover__False__0  [PASS in 0.13s]
+18:59:25  47 of 114 PASS dbt_utils_accepted_range_stg_transactions_amount__False__0 ...... [PASS in 0.14s]
+18:59:25  50 of 114 START test dbt_utils_expression_is_true_mart_daily_state_metrics_fraud_txn_count_txn_count_and_large_txn_count_txn_count  [RUN]
+18:59:25  51 of 114 START test dbt_utils_expression_is_true_mart_fraud_by_category_fraud_txn_count_legit_txn_count_txn_count  [RUN]
+18:59:26  49 of 114 PASS dbt_utils_expression_is_true_mart_customer_risk_profile_fraud_txn_count_txn_count_and_first_txn_at_last_txn_at  [PASS in 0.17s]
+18:59:26  48 of 114 PASS dbt_utils_equal_rowcount_int_transactions_enriched_ref_stg_transactions_  [PASS in 0.18s]
+18:59:26  52 of 114 START test dbt_utils_expression_is_true_mart_fraud_by_state_fraud_customers_unique_customers_and_fraud_merchants_unique_merchants  [RUN]
+18:59:26  53 of 114 START test dbt_utils_expression_is_true_mart_merchant_analytics_fraud_txn_count_txn_count_and_first_txn_date_last_txn_date  [RUN]
+18:59:26  50 of 114 PASS dbt_utils_expression_is_true_mart_daily_state_metrics_fraud_txn_count_txn_count_and_large_txn_count_txn_count  [PASS in 0.13s]
+18:59:26  51 of 114 PASS dbt_utils_expression_is_true_mart_fraud_by_category_fraud_txn_count_legit_txn_count_txn_count  [PASS in 0.13s]
+18:59:26  54 of 114 START test dbt_utils_unique_combination_of_columns_mart_daily_state_metrics_transaction_date__us_state  [RUN]
+18:59:26  55 of 114 START test not_null_int_transactions_enriched_state_name ............. [RUN]
+18:59:26  52 of 114 PASS dbt_utils_expression_is_true_mart_fraud_by_state_fraud_customers_unique_customers_and_fraud_merchants_unique_merchants  [PASS in 0.15s]
+18:59:26  53 of 114 PASS dbt_utils_expression_is_true_mart_merchant_analytics_fraud_txn_count_txn_count_and_first_txn_date_last_txn_date  [PASS in 0.14s]
+18:59:26  56 of 114 START test not_null_int_transactions_enriched_transaction_id ......... [RUN]
+18:59:26  57 of 114 START test not_null_mart_customer_risk_profile_avg_amount ............ [RUN]
+18:59:26  55 of 114 PASS not_null_int_transactions_enriched_state_name ................... [PASS in 0.13s]
+18:59:26  54 of 114 PASS dbt_utils_unique_combination_of_columns_mart_daily_state_metrics_transaction_date__us_state  [PASS in 0.14s]
+18:59:26  58 of 114 START test not_null_mart_customer_risk_profile_customer_id ........... [RUN]
+18:59:26  59 of 114 START test not_null_mart_customer_risk_profile_risk_segment .......... [RUN]
+18:59:26  56 of 114 PASS not_null_int_transactions_enriched_transaction_id ............... [PASS in 0.10s]
+18:59:26  57 of 114 PASS not_null_mart_customer_risk_profile_avg_amount .................. [PASS in 0.11s]
+18:59:26  60 of 114 START test not_null_mart_daily_state_metrics_p95_amount .............. [RUN]
+18:59:26  61 of 114 START test not_null_mart_daily_state_metrics_transaction_date ........ [RUN]
+18:59:26  58 of 114 PASS not_null_mart_customer_risk_profile_customer_id ................. [PASS in 0.09s]
+18:59:26  59 of 114 PASS not_null_mart_customer_risk_profile_risk_segment ................ [PASS in 0.09s]
+18:59:26  62 of 114 START test not_null_mart_daily_state_metrics_us_state ................ [RUN]
+18:59:26  63 of 114 START test not_null_mart_fraud_by_category_category .................. [RUN]
+18:59:26  60 of 114 PASS not_null_mart_daily_state_metrics_p95_amount .................... [PASS in 0.09s]
+18:59:26  61 of 114 PASS not_null_mart_daily_state_metrics_transaction_date .............. [PASS in 0.10s]
+18:59:26  64 of 114 START test not_null_mart_fraud_by_category_fraud_rate ................ [RUN]
+18:59:26  65 of 114 START test not_null_mart_fraud_by_category_fraud_rate_rank ........... [RUN]
+18:59:26  62 of 114 PASS not_null_mart_daily_state_metrics_us_state ...................... [PASS in 0.08s]
+18:59:26  63 of 114 PASS not_null_mart_fraud_by_category_category ........................ [PASS in 0.09s]
+18:59:26  66 of 114 START test not_null_mart_fraud_by_state_fraud_rate ................... [RUN]
+18:59:26  67 of 114 START test not_null_mart_fraud_by_state_state_name ................... [RUN]
+18:59:26  64 of 114 PASS not_null_mart_fraud_by_category_fraud_rate ...................... [PASS in 0.09s]
+18:59:26  65 of 114 PASS not_null_mart_fraud_by_category_fraud_rate_rank ................. [PASS in 0.11s]
+18:59:26  68 of 114 START test not_null_mart_fraud_by_state_us_state ..................... [RUN]
+18:59:26  69 of 114 START test not_null_mart_hourly_fraud_pattern_day_of_week ............ [RUN]
+18:59:26  66 of 114 PASS not_null_mart_fraud_by_state_fraud_rate ......................... [PASS in 0.09s]
+18:59:26  67 of 114 PASS not_null_mart_fraud_by_state_state_name ......................... [PASS in 0.09s]
+18:59:26  70 of 114 START test not_null_mart_hourly_fraud_pattern_transaction_hour ....... [RUN]
+18:59:26  71 of 114 START test not_null_mart_merchant_analytics_main_category ............ [RUN]
+18:59:26  68 of 114 PASS not_null_mart_fraud_by_state_us_state ........................... [PASS in 0.09s]
+18:59:26  72 of 114 START test not_null_mart_merchant_analytics_merchant_name ............ [RUN]
+18:59:26  69 of 114 PASS not_null_mart_hourly_fraud_pattern_day_of_week .................. [PASS in 0.09s]
+18:59:26  73 of 114 START test not_null_states_division .................................. [RUN]
+18:59:26  70 of 114 PASS not_null_mart_hourly_fraud_pattern_transaction_hour ............. [PASS in 0.09s]
+18:59:26  71 of 114 PASS not_null_mart_merchant_analytics_main_category .................. [PASS in 0.09s]
+18:59:26  74 of 114 START test not_null_states_region .................................... [RUN]
+18:59:26  75 of 114 START test not_null_states_state_code ................................ [RUN]
+18:59:26  72 of 114 PASS not_null_mart_merchant_analytics_merchant_name .................. [PASS in 0.09s]
+18:59:26  76 of 114 START test not_null_states_state_name ................................ [RUN]
+18:59:26  73 of 114 PASS not_null_states_division ........................................ [PASS in 0.09s]
+18:59:26  74 of 114 PASS not_null_states_region .......................................... [PASS in 0.09s]
+18:59:26  77 of 114 START test not_null_stg_transactions_amount .......................... [RUN]
+18:59:26  75 of 114 PASS not_null_states_state_code ...................................... [PASS in 0.09s]
+18:59:26  78 of 114 START test not_null_stg_transactions_amount_bucket ................... [RUN]
+18:59:26  79 of 114 START test not_null_stg_transactions_category ........................ [RUN]
+18:59:26  76 of 114 PASS not_null_states_state_name ...................................... [PASS in 0.10s]
+18:59:26  80 of 114 START test not_null_stg_transactions_customer_id ..................... [RUN]
+18:59:26  77 of 114 PASS not_null_stg_transactions_amount ................................ [PASS in 0.09s]
+18:59:26  78 of 114 PASS not_null_stg_transactions_amount_bucket ......................... [PASS in 0.08s]
+18:59:26  79 of 114 PASS not_null_stg_transactions_category .............................. [PASS in 0.08s]
+18:59:26  81 of 114 START test not_null_stg_transactions_day_of_week ..................... [RUN]
+18:59:27  82 of 114 START test not_null_stg_transactions_is_fraud ........................ [RUN]
+18:59:27  83 of 114 START test not_null_stg_transactions_merchant_name ................... [RUN]
+18:59:27  80 of 114 PASS not_null_stg_transactions_customer_id ........................... [PASS in 0.10s]
+18:59:27  84 of 114 START test not_null_stg_transactions_transaction_date ................ [RUN]
+18:59:27  81 of 114 PASS not_null_stg_transactions_day_of_week ........................... [PASS in 0.09s]
+18:59:27  82 of 114 PASS not_null_stg_transactions_is_fraud .............................. [PASS in 0.09s]
+18:59:27  83 of 114 PASS not_null_stg_transactions_merchant_name ......................... [PASS in 0.09s]
+18:59:27  85 of 114 START test not_null_stg_transactions_transaction_hour ................ [RUN]
+18:59:27  86 of 114 START test not_null_stg_transactions_transaction_id .................. [RUN]
+18:59:27  87 of 114 START test not_null_stg_transactions_transaction_time ................ [RUN]
+18:59:27  84 of 114 PASS not_null_stg_transactions_transaction_date ...................... [PASS in 0.11s]
+18:59:27  85 of 114 PASS not_null_stg_transactions_transaction_hour ...................... [PASS in 0.09s]
+18:59:27  88 of 114 START test not_null_stg_transactions_us_state ........................ [RUN]
+18:59:27  89 of 114 START test relationships_mart_daily_state_metrics_us_state__state_code__ref_states_  [RUN]
+18:59:27  87 of 114 PASS not_null_stg_transactions_transaction_time ...................... [PASS in 0.10s]
+18:59:27  86 of 114 PASS not_null_stg_transactions_transaction_id ........................ [PASS in 0.12s]
+18:59:27  90 of 114 START test relationships_mart_fraud_by_state_us_state__state_code__ref_states_  [RUN]
+18:59:27  91 of 114 START test relationships_mart_merchant_analytics_main_category__category__ref_mart_fraud_by_category_  [RUN]
+18:59:27  88 of 114 PASS not_null_stg_transactions_us_state .............................. [PASS in 0.14s]
+18:59:27  92 of 114 START test relationships_stg_transactions_us_state__state_code__ref_states_  [RUN]
+18:59:27  89 of 114 PASS relationships_mart_daily_state_metrics_us_state__state_code__ref_states_  [PASS in 0.14s]
+18:59:27  93 of 114 START test source_accepted_values_transactions_db_transactions_cat_id__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [RUN]
+18:59:27  90 of 114 PASS relationships_mart_fraud_by_state_us_state__state_code__ref_states_  [PASS in 0.13s]
+18:59:27  91 of 114 PASS relationships_mart_merchant_analytics_main_category__category__ref_mart_fraud_by_category_  [PASS in 0.14s]
+18:59:27  94 of 114 START test source_accepted_values_transactions_db_transactions_gender__M__F  [RUN]
+18:59:27  95 of 114 START test source_accepted_values_transactions_db_transactions_target__False__0__1  [RUN]
+18:59:27  92 of 114 PASS relationships_stg_transactions_us_state__state_code__ref_states_  [PASS in 0.17s]
+18:59:27  96 of 114 START test source_not_null_transactions_db_transactions_amount ....... [RUN]
+18:59:27  95 of 114 PASS source_accepted_values_transactions_db_transactions_target__False__0__1  [PASS in 0.13s]
+18:59:27  94 of 114 PASS source_accepted_values_transactions_db_transactions_gender__M__F  [PASS in 0.15s]
+18:59:27  93 of 114 PASS source_accepted_values_transactions_db_transactions_cat_id__entertainment__food_dining__gas_transport__grocery_net__grocery_pos__health_fitness__home__kids_pets__misc_net__misc_pos__personal_care__shopping_net__shopping_pos__travel  [PASS in 0.21s]
+18:59:27  97 of 114 START test source_not_null_transactions_db_transactions_cat_id ....... [RUN]
+18:59:27  98 of 114 START test source_not_null_transactions_db_transactions_merch ........ [RUN]
+18:59:27  99 of 114 START test source_not_null_transactions_db_transactions_target ....... [RUN]
+18:59:27  96 of 114 PASS source_not_null_transactions_db_transactions_amount ............. [PASS in 0.10s]
+18:59:27  100 of 114 START test source_not_null_transactions_db_transactions_transaction_time  [RUN]
+18:59:27  97 of 114 PASS source_not_null_transactions_db_transactions_cat_id ............. [PASS in 0.09s]
+18:59:27  98 of 114 PASS source_not_null_transactions_db_transactions_merch .............. [PASS in 0.10s]
+18:59:27  99 of 114 PASS source_not_null_transactions_db_transactions_target ............. [PASS in 0.11s]
+18:59:27  101 of 114 START test source_not_null_transactions_db_transactions_us_state .... [RUN]
+18:59:27  102 of 114 START test unique_int_transactions_enriched_transaction_id .......... [RUN]
+18:59:27  103 of 114 START test unique_mart_customer_risk_profile_customer_id ............ [RUN]
+18:59:27  100 of 114 PASS source_not_null_transactions_db_transactions_transaction_time .. [PASS in 0.11s]
+18:59:27  104 of 114 START test unique_mart_fraud_by_category_category ................... [RUN]
+18:59:27  103 of 114 PASS unique_mart_customer_risk_profile_customer_id .................. [PASS in 0.10s]
+18:59:27  101 of 114 PASS source_not_null_transactions_db_transactions_us_state .......... [PASS in 0.12s]
+18:59:27  105 of 114 START test unique_mart_fraud_by_state_us_state ...................... [RUN]
+18:59:27  106 of 114 START test unique_mart_merchant_analytics_merchant_name ............. [RUN]
+18:59:27  104 of 114 PASS unique_mart_fraud_by_category_category ......................... [PASS in 0.11s]
+18:59:27  107 of 114 START test unique_states_state_code ................................. [RUN]
+18:59:28  106 of 114 PASS unique_mart_merchant_analytics_merchant_name ................... [PASS in 0.10s]
+18:59:28  108 of 114 START test unique_states_state_name ................................. [RUN]
+18:59:28  105 of 114 PASS unique_mart_fraud_by_state_us_state ............................ [PASS in 0.15s]
+18:59:28  107 of 114 PASS unique_states_state_code ....................................... [PASS in 0.09s]
+18:59:28  109 of 114 START test unique_stg_transactions_transaction_id ................... [RUN]
+18:59:28  110 of 114 START unit_test mart_customer_risk_profile::test_customer_risk_segments  [RUN]
+18:59:28  108 of 114 PASS unique_states_state_name ....................................... [PASS in 0.11s]
+18:59:28  102 of 114 PASS unique_int_transactions_enriched_transaction_id ................ [PASS in 0.42s]
+18:59:28  111 of 114 START unit_test mart_fraud_by_category::test_fraud_by_category_rates_and_rank  [RUN]
+18:59:28  112 of 114 START unit_test mart_hourly_fraud_pattern::test_hourly_high_risk_window  [RUN]
+18:59:28  109 of 114 PASS unique_stg_transactions_transaction_id ......................... [PASS in 0.41s]
+18:59:28  113 of 114 START unit_test mart_merchant_analytics::test_merchant_main_category_and_suspicious_flag  [RUN]
+18:59:29  111 of 114 PASS mart_fraud_by_category::test_fraud_by_category_rates_and_rank .. [PASS in 0.87s]
+18:59:29  112 of 114 PASS mart_hourly_fraud_pattern::test_hourly_high_risk_window ........ [PASS in 0.88s]
+18:59:29  114 of 114 START unit_test stg_transactions::test_stg_transactions_cleans_and_enriches  [RUN]
+18:59:29  110 of 114 PASS mart_customer_risk_profile::test_customer_risk_segments ........ [PASS in 1.04s]
+18:59:29  113 of 114 PASS mart_merchant_analytics::test_merchant_main_category_and_suspicious_flag  [PASS in 0.71s]
+18:59:29  114 of 114 PASS stg_transactions::test_stg_transactions_cleans_and_enriches .... [PASS in 0.42s]
+18:59:29  
+18:59:29  Finished running 109 data tests, 5 unit tests in 0 hours 0 minutes and 6.34 seconds (6.34s).
+18:59:29  
+18:59:29  Completed successfully
+18:59:29  
+18:59:29  Done. PASS=114 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=114
+
+===== dbt_unit_test: exit 0, 7.0s
+dbt test --select "test_type:unit"
+18:59:33  Running with dbt=1.12.6
+18:59:33  Registered adapter: clickhouse=1.10.3
+18:59:34  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:34  
+18:59:34  Concurrency: 4 threads (target='dev')
+18:59:34  
+18:59:35  1 of 5 START unit_test mart_customer_risk_profile::test_customer_risk_segments . [RUN]
+18:59:35  2 of 5 START unit_test mart_fraud_by_category::test_fraud_by_category_rates_and_rank  [RUN]
+18:59:35  3 of 5 START unit_test mart_hourly_fraud_pattern::test_hourly_high_risk_window . [RUN]
+18:59:35  4 of 5 START unit_test mart_merchant_analytics::test_merchant_main_category_and_suspicious_flag  [RUN]
+18:59:36  3 of 5 PASS mart_hourly_fraud_pattern::test_hourly_high_risk_window ............ [PASS in 0.95s]
+18:59:36  5 of 5 START unit_test stg_transactions::test_stg_transactions_cleans_and_enriches  [RUN]
+18:59:36  2 of 5 PASS mart_fraud_by_category::test_fraud_by_category_rates_and_rank ...... [PASS in 0.97s]
+18:59:36  1 of 5 PASS mart_customer_risk_profile::test_customer_risk_segments ............ [PASS in 1.03s]
+18:59:36  4 of 5 PASS mart_merchant_analytics::test_merchant_main_category_and_suspicious_flag  [PASS in 1.11s]
+18:59:36  5 of 5 PASS stg_transactions::test_stg_transactions_cleans_and_enriches ........ [PASS in 0.46s]
+18:59:36  
+18:59:36  Finished running 5 unit tests in 0 hours 0 minutes and 1.82 seconds (1.82s).
+18:59:36  
+18:59:36  Completed successfully
+18:59:36  
+18:59:36  Done. PASS=5 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=5
+
+===== dbt_docs: exit 0, 17.3s
+dbt docs generate
+18:59:40  Running with dbt=1.12.6
+18:59:40  Registered adapter: clickhouse=1.10.3
+18:59:41  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:41  
+18:59:41  Concurrency: 4 threads (target='dev')
+18:59:41  
+18:59:45  Building catalog
+18:59:45  Catalog written to /tmp/repo/dbt/target/catalog.json
+18:59:48  Running with dbt=1.12.6
+18:59:49  Registered adapter: clickhouse=1.10.3
+18:59:50  Found 8 models, 109 data tests, 1 seed, 1 source, 990 macros, 5 unit tests
+18:59:50  
+18:59:50  Concurrency: 4 threads (target='dev')
+18:59:50  
+18:59:53  Building catalog
+18:59:54  Catalog written to /tmp/repo/dbt/target/catalog.json
+
+===== sqlfluff_lint: exit 0, 5.8s
+sqlfluff lint models tests
+All Finished!
+
+===== pre_commit: exit 0, 34.4s
+pre-commit run --config .pre-commit-config.yaml --all-files
+[INFO] Initializing environment for https://github.com/pre-commit/pre-commit-hooks.
+[INFO] Initializing environment for https://github.com/sqlfluff/sqlfluff.
+[INFO] Installing environment for https://github.com/pre-commit/pre-commit-hooks.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+[INFO] Installing environment for https://github.com/sqlfluff/sqlfluff.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+trim trailing whitespace.................................................Passed
+fix end of files.........................................................Passed
+check yaml...............................................................Passed
+check for added large files..............................................Passed
+sqlfluff-fix.............................................................Passed
+sqlfluff-lint............................................................Passed
+
+===== git_status_after_hooks: exit 0, 0.0s
+
+===== q_tables: exit 0, 0.1s
+   ┌─database───────────────┬─table──────────────────────┬─engine────┬─total_rows─┐
+1. │ fraud_dbt_intermediate │ int_transactions_enriched  │ View      │       ᴺᵁᴸᴸ │
+2. │ fraud_dbt_marts        │ mart_customer_risk_profile │ MergeTree │        983 │
+3. │ fraud_dbt_marts        │ mart_daily_state_metrics   │ MergeTree │      26580 │
+4. │ fraud_dbt_marts        │ mart_fraud_by_category     │ MergeTree │         14 │
+5. │ fraud_dbt_marts        │ mart_fraud_by_state        │ MergeTree │         51 │
+6. │ fraud_dbt_marts        │ mart_hourly_fraud_pattern  │ MergeTree │        168 │
+7. │ fraud_dbt_marts        │ mart_merchant_analytics    │ MergeTree │        693 │
+8. │ fraud_dbt_seeds        │ states                     │ MergeTree │         51 │
+9. │ fraud_dbt_staging      │ stg_transactions           │ MergeTree │    1296675 │ -- 1.30 million
+   └────────────────────────┴────────────────────────────┴───────────┴────────────┘
+
+===== q_top_categories: exit 0, 0.1s
+    ┌─category───────┬─txn_count─┬─fraud_txn_count─┬─fraud_rate─┬─share_of_all_fraud_pct─┬─fraud_rate_rank─┐
+ 1. │ shopping_net   │     97543 │            1713 │     1.7561 │                22.8217 │               1 │
+ 2. │ misc_net       │     63287 │             915 │     1.4458 │                12.1902 │               2 │
+ 3. │ grocery_pos    │    123638 │            1743 │     1.4098 │                23.2214 │               3 │
+ 4. │ shopping_pos   │    116672 │             843 │     0.7225 │                 11.231 │               4 │
+ 5. │ gas_transport  │    131659 │             618 │     0.4694 │                 8.2334 │               5 │
+ 6. │ misc_pos       │     79655 │             250 │     0.3139 │                 3.3307 │               6 │
+ 7. │ grocery_net    │     45452 │             134 │     0.2948 │                 1.7852 │               7 │
+ 8. │ travel         │     40507 │             116 │     0.2864 │                 1.5454 │               8 │
+ 9. │ entertainment  │     94014 │             233 │     0.2478 │                 3.1042 │               9 │
+10. │ personal_care  │     90758 │             220 │     0.2424 │                  2.931 │              10 │
+11. │ kids_pets      │    113035 │             239 │     0.2114 │                 3.1841 │              11 │
+12. │ food_dining    │     91461 │             151 │     0.1651 │                 2.0117 │              12 │
+13. │ home           │    123115 │             198 │     0.1608 │                 2.6379 │              13 │
+14. │ health_fitness │     85879 │             133 │     0.1549 │                 1.7719 │              14 │
+    └────────────────┴───────────┴─────────────────┴────────────┴────────────────────────┴─────────────────┘
+
+===== q_top_states: exit 0, 0.1s
+   ┌─us_state─┬─state_name───┬─region────┬─txn_count─┬─fraud_rate─┬─unique_customers─┬─fraud_customers─┬─unique_merchants─┬─fraud_rate_rank─┐
+1. │ DE       │ Delaware     │ South     │         9 │        100 │                1 │               1 │                9 │               1 │
+2. │ RI       │ Rhode Island │ Northeast │       550 │     2.7273 │                1 │               1 │              365 │               2 │
+3. │ AK       │ Alaska       │ West      │      2120 │     1.6981 │                3 │               3 │              629 │               3 │
+4. │ NV       │ Nevada       │ West      │      5607 │     0.8382 │                5 │               5 │              689 │               4 │
+5. │ CO       │ Colorado     │ West      │     13880 │     0.8141 │               13 │              12 │              693 │               5 │
+6. │ OR       │ Oregon       │ West      │     18597 │     0.8012 │               18 │              13 │              693 │               6 │
+7. │ TN       │ Tennessee    │ South     │     17554 │     0.7975 │               17 │              15 │              693 │               7 │
+8. │ NE       │ Nebraska     │ Midwest   │     24168 │     0.7448 │               19 │              16 │              693 │               8 │
+   └──────────┴──────────────┴───────────┴───────────┴────────────┴──────────────────┴─────────────────┴──────────────────┴─────────────────┘
+
+===== q_risk_segments: exit 0, 0.1s
+   ┌─risk_segment─┬─customers─┬───txns─┬─frauds─┬─avg_fraud_rate─┐
+1. │ HIGH         │       141 │  34879 │   1567 │         54.324 │
+2. │ LOW          │       221 │ 319851 │      0 │              0 │
+3. │ MEDIUM       │       621 │ 941945 │   5939 │          0.796 │
+   └──────────────┴───────────┴────────┴────────┴────────────────┘
+
+===== q_high_risk_windows: exit 0, 0.1s
+   ┌─transaction_hour─┬─day_part─┬─days─┬─avg_fraud_rate─┬─avg_lift─┐
+1. │                0 │ night    │    7 │          1.559 │     2.69 │
+2. │                1 │ night    │    6 │          1.678 │      2.9 │
+3. │                2 │ night    │    6 │          1.586 │     2.74 │
+4. │                3 │ night    │    7 │          1.446 │      2.5 │
+5. │               22 │ night    │    7 │          2.976 │     5.14 │
+6. │               23 │ night    │    7 │          2.921 │     5.05 │
+   └──────────────────┴──────────┴──────┴────────────────┴──────────┘
+
+===== q_merchants: exit 0, 0.1s
+   ┌─merchants─┬─suspicious─┬─avg_fraud_rate─┬─max_categories─┐
+1. │       693 │        130 │           0.56 │              2 │
+   └───────────┴────────────┴────────────────┴────────────────┘
+
+===== q_top_suspicious_merchants: exit 0, 0.1s
+   ┌─merchant_name───────────────┬─main_category─┬─txn_count─┬─fraud_txn_count─┬─fraud_rate─┬─fraud_rate_lift─┐
+1. │ Kozey-Boehm                 │ shopping_net  │      1866 │              48 │     2.5723 │            4.44 │
+2. │ Herman, Treutel and Dickens │ misc_net      │      1300 │              33 │     2.5385 │            4.39 │
+3. │ Kerluke-Abshire             │ shopping_net  │      1838 │              41 │     2.2307 │            3.85 │
+4. │ Brown PLC                   │ misc_net      │      1176 │              26 │     2.2109 │            3.82 │
+5. │ Goyette Inc                 │ shopping_net  │      1943 │              42 │     2.1616 │            3.73 │
+   └─────────────────────────────┴───────────────┴───────────┴─────────────────┴────────────┴─────────────────┘
+
+===== q_daily_sample: exit 0, 0.1s
+Row 1:
+──────
+transaction_date:    2020-06-21
+us_state:            PA
+state_name:          Pennsylvania
+region:              Northeast
+txn_count:           93
+unique_customers:    40
+total_amount:        5562.49
+avg_amount:          59.81
+median_amount:       61.68
+p95_amount:          134.57
+max_amount:          181.92
+large_txn_count:     0
+large_txn_share_pct: 0
+fraud_txn_count:     0
+fraud_rate:          0
+fraud_amount:        0
+
+Row 2:
+──────
+transaction_date:    2020-06-21
+us_state:            TX
+state_name:          Texas
+region:              South
+txn_count:           89
+unique_customers:    42
+total_amount:        6537.04
+avg_amount:          73.45
+median_amount:       58.57
+p95_amount:          207.52
+max_amount:          754.81
+large_txn_count:     5
+large_txn_share_pct: 5.618
+fraud_txn_count:     2
+fraud_rate:          2.2472
+fraud_amount:        37.56
+
+===== q_amount_buckets: exit 0, 0.1s
+   ┌─amount_bucket─┬─count()─┬─fraud_rate─┐
+1. │ micro         │  335718 │      0.156 │
+2. │ small         │  336496 │      0.322 │
+3. │ medium        │  562531 │      0.035 │
+4. │ large         │   57993 │      8.198 │
+5. │ very_large    │    3937 │      24.13 │
+   └───────────────┴─────────┴────────────┘
+
+===== q_column_comments: exit 0, 0.1s
+   ┌─table──────────────────────┬─name──────────┬─type─────┬─comment──────────────────────────────────────────────────────┐
+1. │ mart_customer_risk_profile │ customer_id   │ String   │ Суррогатный ключ клиента. В таблице нет номера карты, поэтом │
+2. │ mart_customer_risk_profile │ customer_name │ String   │ Имя и фамилия клиента.                                       │
+3. │ mart_customer_risk_profile │ gender        │ String   │ Пол клиента.                                                 │
+4. │ mart_customer_risk_profile │ us_state      │ String   │ Штат клиента.                                                │
+5. │ mart_customer_risk_profile │ first_txn_at  │ DateTime │ Первая транзакция клиента.                                   │
+6. │ mart_customer_risk_profile │ last_txn_at   │ DateTime │ Последняя транзакция клиента.                                │
+   └────────────────────────────┴───────────────┴──────────┴──────────────────────────────────────────────────────────────┘

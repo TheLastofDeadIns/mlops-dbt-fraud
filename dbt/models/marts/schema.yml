@@ -1,0 +1,398 @@
+version: 2
+
+models:
+  - name: mart_daily_state_metrics
+    description: '{{ doc("mart_daily_state_metrics") }}'
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - transaction_date
+              - us_state
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "fraud_txn_count <= txn_count and large_txn_count <= txn_count"
+      - dbt_expectations.expect_column_pair_values_A_to_be_greater_than_B:
+          arguments:
+            column_A: max_amount
+            column_B: p95_amount
+            or_equal: true
+    columns:
+      - name: transaction_date
+        description: Дата транзакций.
+        data_tests:
+          - not_null
+      - name: us_state
+        description: Штат клиента.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('states')
+                field: state_code
+      - name: state_name
+        description: Название штата.
+      - name: region
+        description: Регион США.
+      - name: txn_count
+        description: Количество транзакций за день в штате.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+      - name: unique_customers
+        description: Число уникальных клиентов за день в штате.
+      - name: total_amount
+        description: Сумма всех транзакций в долларах.
+      - name: avg_amount
+        description: Средний чек в долларах.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: median_amount
+        description: Медиана суммы транзакции (макрос percentile).
+      - name: p95_amount
+        description: 95-й перцентиль суммы транзакции (макрос percentile, в ClickHouse quantileExact).
+        data_tests:
+          - not_null
+      - name: max_amount
+        description: Максимальная сумма транзакции.
+      - name: large_txn_count
+        description: Количество крупных транзакций, сумма не меньше var('large_amount_threshold').
+      - name: large_txn_share_pct
+        description: Доля крупных транзакций в процентах.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: &percent_range
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: fraud_txn_count
+        description: Количество мошеннических транзакций.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций в долларах.
+
+  - name: mart_fraud_by_category
+    description: '{{ doc("mart_fraud_by_category") }}'
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_equal:
+          arguments:
+            value: 14
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "fraud_txn_count + legit_txn_count = txn_count"
+    columns:
+      - name: category
+        description: Категория покупки.
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values:
+                  - entertainment
+                  - food_dining
+                  - gas_transport
+                  - grocery_net
+                  - grocery_pos
+                  - health_fitness
+                  - home
+                  - kids_pets
+                  - misc_net
+                  - misc_pos
+                  - personal_care
+                  - shopping_net
+                  - shopping_pos
+                  - travel
+      - name: txn_count
+        description: Общее число транзакций в категории.
+      - name: fraud_txn_count
+        description: Число мошеннических транзакций.
+      - name: legit_txn_count
+        description: Число обычных транзакций.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: total_amount
+        description: Сумма всех транзакций категории в долларах.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций в долларах.
+      - name: legit_amount
+        description: Сумма обычных транзакций в долларах.
+      - name: fraud_amount_share_pct
+        description: Доля мошеннических денег в обороте категории, в процентах.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: avg_amount
+        description: Средний чек по категории.
+      - name: avg_fraud_amount
+        description: Средний чек мошеннической транзакции, NULL если фрода в категории нет.
+      - name: share_of_all_fraud_pct
+        description: Доля категории во всех мошеннических транзакциях, в процентах. В сумме по категориям 100.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: fraud_rate_rank
+        description: Место категории по fraud_rate, 1 у самой рискованной.
+        data_tests:
+          - not_null
+
+  - name: mart_fraud_by_state
+    description: '{{ doc("mart_fraud_by_state") }}'
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 1
+            max_value: 51
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "fraud_customers <= unique_customers and fraud_merchants <= unique_merchants"
+    columns:
+      - name: us_state
+        description: Штат клиента.
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('states')
+                field: state_code
+      - name: state_name
+        description: Название штата.
+        data_tests:
+          - not_null
+      - name: region
+        description: Регион США.
+      - name: division
+        description: Дивизион внутри региона.
+      - name: txn_count
+        description: Число транзакций клиентов штата.
+      - name: fraud_txn_count
+        description: Число мошеннических транзакций.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: unique_customers
+        description: Уникальные клиенты штата.
+      - name: unique_merchants
+        description: Уникальные мерчанты, у которых покупали клиенты штата.
+      - name: fraud_customers
+        description: Клиенты штата, у которых был хотя бы один фрод.
+      - name: fraud_customer_share_pct
+        description: Доля клиентов с фродом, в процентах.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: fraud_merchants
+        description: Мерчанты, у которых были мошеннические транзакции клиентов штата.
+      - name: total_amount
+        description: Сумма всех транзакций в долларах.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций в долларах.
+      - name: fraud_amount_share_pct
+        description: Доля мошеннических денег в обороте штата, в процентах.
+      - name: avg_amount
+        description: Средний чек.
+      - name: fraud_rate_rank
+        description: Место штата по fraud_rate, 1 у самого рискованного.
+
+  - name: mart_customer_risk_profile
+    description: '{{ doc("mart_customer_risk_profile") }}'
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "fraud_txn_count <= txn_count and first_txn_at <= last_txn_at"
+      - dbt_expectations.expect_column_distinct_count_to_equal:
+          arguments:
+            column_name: risk_segment
+            value: 3
+          config:
+            severity: warn
+    columns:
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_name
+        description: Имя и фамилия клиента.
+      - name: gender
+        description: Пол клиента.
+      - name: us_state
+        description: Штат клиента.
+      - name: first_txn_at
+        description: Первая транзакция клиента.
+      - name: last_txn_at
+        description: Последняя транзакция клиента.
+      - name: customer_lifetime_days
+        description: Дней между первой и последней транзакцией.
+      - name: active_days
+        description: Число дней, в которые были транзакции.
+      - name: txn_count
+        description: Количество транзакций клиента.
+      - name: unique_categories
+        description: Число разных категорий покупок.
+      - name: unique_merchants
+        description: Число разных мерчантов.
+      - name: total_amount
+        description: Сумма всех транзакций клиента.
+      - name: avg_amount
+        description: Средний чек клиента.
+        data_tests:
+          - not_null
+      - name: max_amount
+        description: Максимальная транзакция клиента.
+      - name: large_txn_share_pct
+        description: Доля крупных транзакций клиента, в процентах.
+      - name: night_txn_share_pct
+        description: Доля ночных транзакций (22:00–05:59), в процентах.
+      - name: fraud_txn_count
+        description: Количество мошеннических транзакций клиента.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций клиента.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: last_fraud_at
+        description: Время последней мошеннической транзакции, NULL если фрода не было.
+      - name: risk_segment
+        description: '{{ doc("risk_segment") }}'
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["HIGH", "MEDIUM", "LOW"]
+
+  - name: mart_hourly_fraud_pattern
+    description: '{{ doc("mart_hourly_fraud_pattern") }}'
+    data_tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          arguments:
+            column_list: ["day_of_week", "transaction_hour"]
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 1
+            max_value: 168
+    columns:
+      - name: day_of_week
+        description: День недели по ISO, понедельник 1.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+                max_value: 7
+      - name: day_name
+        description: Название дня недели.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+      - name: transaction_hour
+        description: Час транзакции.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 23
+      - name: day_part
+        description: Часть суток.
+      - name: txn_count
+        description: Число транзакций в окне день недели x час.
+      - name: fraud_txn_count
+        description: Число мошеннических транзакций в окне.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: overall_fraud_rate
+        description: Доля фрода по всем транзакциям, в процентах, одинакова во всех строках.
+      - name: fraud_rate_lift
+        description: Во сколько раз fraud_rate окна выше общего.
+      - name: is_high_risk_window
+        description: '{{ doc("is_high_risk_window") }}'
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций в окне.
+      - name: avg_amount
+        description: Средний чек в окне.
+      - name: avg_fraud_amount
+        description: Средний чек мошеннической транзакции в окне.
+      - name: fraud_rate_rank
+        description: Место окна по fraud_rate, 1 у самого рискованного.
+
+  - name: mart_merchant_analytics
+    description: '{{ doc("mart_merchant_analytics") }}'
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "fraud_txn_count <= txn_count and first_txn_date <= last_txn_date"
+    columns:
+      - name: merchant_name
+        description: Название мерчанта.
+        data_tests:
+          - not_null
+          - unique
+      - name: main_category
+        description: Самая частая категория транзакций мерчанта.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('mart_fraud_by_category')
+                field: category
+      - name: category_count
+        description: Сколько разных категорий встречается у мерчанта.
+      - name: txn_count
+        description: Число транзакций мерчанта.
+      - name: turnover
+        description: Оборот мерчанта, сумма всех транзакций в долларах.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: avg_amount
+        description: Средний чек.
+      - name: unique_customers
+        description: Уникальные клиенты мерчанта.
+      - name: unique_customer_states
+        description: Из скольких штатов клиенты мерчанта.
+      - name: fraud_txn_count
+        description: Число мошеннических транзакций.
+      - name: fraud_amount
+        description: Сумма мошеннических транзакций.
+      - name: fraud_rate
+        description: '{{ doc("fraud_rate") }}'
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between: *percent_range
+      - name: overall_fraud_rate
+        description: Доля фрода по всем мерчантам, в процентах.
+      - name: fraud_rate_lift
+        description: Во сколько раз fraud_rate мерчанта выше общего.
+      - name: is_suspicious
+        description: '{{ doc("is_suspicious") }}'
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: first_txn_date
+        description: Дата первой транзакции у мерчанта.
+      - name: last_txn_date
+        description: Дата последней транзакции у мерчанта.
+      - name: turnover_rank
+        description: Место мерчанта по обороту.

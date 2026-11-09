@@ -1,0 +1,27 @@
+# хуки запускаются из корня git-репозитория, конфиг лежит в папке dbt/
+#   pre-commit install --config dbt/.pre-commit-config.yaml
+#   pre-commit run --config dbt/.pre-commit-config.yaml --all-files
+# sqlfluff берёт настройки из dbt/.sqlfluff (jinja-шаблонизатор, база данных для линтинга не нужна)
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # логи прогона в assets/ сохранены дословно, хуки их не трогают
+      - id: trailing-whitespace
+        exclude: (^|/)assets/
+      - id: end-of-file-fixer
+        exclude: (^|/)assets/
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 4.5.0
+    hooks:
+      # сначала автоисправление, затем проверка того, что исправить автоматически нельзя
+      - id: sqlfluff-fix
+        args: [--dialect, clickhouse]
+        files: (^|/)(models|tests|analyses)/.*\.sql$
+      - id: sqlfluff-lint
+        args: [--dialect, clickhouse]
+        files: (^|/)(models|tests|analyses)/.*\.sql$

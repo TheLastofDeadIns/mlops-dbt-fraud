@@ -1,0 +1,18 @@
+# dbt ищет profiles.yml сначала в папке проекта, поэтому отдельный ~/.dbt/profiles.yml не нужен
+# параметры подключения берутся из переменных окружения, по умолчанию локальный ClickHouse без пароля
+fraud_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      driver: http
+      host: "{{ env_var('CLICKHOUSE_HOST', 'localhost') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT', '8123') | as_number }}"
+      user: "{{ env_var('CLICKHOUSE_USER', 'default') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD', '') }}"
+      secure: false
+      # в ClickHouse схема dbt это база данных, слои получают суффиксы fraud_dbt_staging, fraud_dbt_marts и т.д.
+      schema: "{{ env_var('DBT_CLICKHOUSE_SCHEMA', 'fraud_dbt') }}"
+      threads: 4
+      connect_timeout: 30
+      send_receive_timeout: 600

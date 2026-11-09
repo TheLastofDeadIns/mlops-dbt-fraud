@@ -1,0 +1,47 @@
+[sqlfluff]
+dialect = clickhouse
+templater = jinja
+max_line_length = 120
+# CP03 и CP05: имена функций и типов ClickHouse чувствительны к регистру (countIf, argMax, quantileExact, DateTime),
+# автофикс регистра их ломает
+# ST06: порядок колонок в витринах задан бизнес-смыслом, а не правилом "простые колонки перед вычислениями"
+exclude_rules = CP03, CP05, ST06
+large_file_skip_byte_limit = 50000
+encoding = utf-8
+
+[sqlfluff:indentation]
+indent_unit = space
+tab_space_size = 4
+indented_using_on = True
+implicit_indents = allow
+
+[sqlfluff:templater:jinja]
+# ref, source, config и return из dbt, плюс макросы проекта и заглушки пакетов
+apply_dbt_builtins = True
+load_macros_from_path = macros
+library_path = sqlfluff_libs
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:aliasing.table]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.column]
+aliasing = explicit
+
+[sqlfluff:rules:ambiguous.column_references]
+group_by_and_order_by_style = explicit
+
+[sqlfluff:rules:convention.count_rows]
+prefer_count_1 = False
+prefer_count_0 = False
+
+[sqlfluff:rules:layout.long_lines]
+ignore_comment_lines = True

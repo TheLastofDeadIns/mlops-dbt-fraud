@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: transactions_db
+    description: '{{ doc("source_transactions_db") }}'
+    schema: "{{ var('source_schema', 'transactions_db') }}"
+    tables:
+      - name: transactions
+        description: >
+          Сырые карточные транзакции из домашки по ClickHouse: одна строка на одну операцию по карте,
+          признак target отмечает подтверждённое мошенничество. Ключа транзакции в таблице нет,
+          он строится в staging.
+        columns:
+          - name: transaction_time
+            description: Дата и время транзакции.
+            data_tests:
+              - not_null
+          - name: merch
+            description: Название мерчанта, в исходном датасете с префиксом fraud_ у всех мерчантов.
+            data_tests:
+              - not_null
+          - name: cat_id
+            description: Категория покупки, 14 значений.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values:
+                      - entertainment
+                      - food_dining
+                      - gas_transport
+                      - grocery_net
+                      - grocery_pos
+                      - health_fitness
+                      - home
+                      - kids_pets
+                      - misc_net
+                      - misc_pos
+                      - personal_care
+                      - shopping_net
+                      - shopping_pos
+                      - travel
+          - name: amount
+            description: Сумма транзакции в долларах.
+            data_tests:
+              - not_null
+          - name: name_1
+            description: Имя клиента.
+          - name: name_2
+            description: Фамилия клиента.
+          - name: gender
+            description: Пол клиента, M или F.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["M", "F"]
+          - name: us_state
+            description: Штат проживания клиента, двухбуквенный код.
+            data_tests:
+              - not_null
+          - name: lat
+            description: Широта адреса клиента.
+          - name: lon
+            description: Долгота адреса клиента.
+          - name: merchant_lat
+            description: Широта точки мерчанта.
+          - name: merchant_lon
+            description: Долгота точки мерчанта.
+          - name: target
+            description: Признак фрода, 1 для мошеннической транзакции и 0 для обычной.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [0, 1]
+                    quote: false
