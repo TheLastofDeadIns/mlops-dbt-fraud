@@ -1,0 +1,36 @@
+version: 2
+
+seeds:
+  - name: states
+    description: >
+      Справочник штатов США: двухбуквенный код, название, регион и дивизион по классификации
+      Бюро переписи населения США. 50 штатов и округ Колумбия (DC), который встречается в данных
+      как отдельный штат.
+    config:
+      column_types:
+        state_code: String
+        state_name: String
+        region: String
+        division: String
+    columns:
+      - name: state_code
+        description: Двухбуквенный почтовый код штата, ключ для связи с us_state в транзакциях.
+        data_tests:
+          - not_null
+          - unique
+      - name: state_name
+        description: Полное название штата.
+        data_tests:
+          - not_null
+          - unique
+      - name: region
+        description: Регион по классификации Census Bureau.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Northeast", "Midwest", "South", "West"]
+      - name: division
+        description: Дивизион внутри региона по классификации Census Bureau.
+        data_tests:
+          - not_null

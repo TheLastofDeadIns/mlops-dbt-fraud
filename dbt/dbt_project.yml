@@ -1,0 +1,59 @@
+name: fraud_analytics
+version: "1.0.0"
+profile: fraud_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+
+clean-targets:
+  - target
+  - dbt_packages
+  - logs
+
+vars:
+  # база ClickHouse с сырой таблицей transactions из домашки по ClickHouse
+  source_schema: transactions_db
+  # границы корзин суммы для макроса amount_bucket: micro < 10 <= small < 50 <= medium < 200 <= large < 1000 <= very_large
+  amount_bucket_thresholds: [10, 50, 200, 1000]
+  # транзакция считается крупной от этой суммы, совпадает с границей корзины large
+  large_amount_threshold: 200
+  # клиент HIGH, если доля фрода в его транзакциях не меньше порога в процентах
+  high_risk_fraud_rate_pct: 2.0
+  # окно день недели x час рискованное, если fraud_rate выше общего во столько раз
+  high_risk_window_lift: 2.0
+  # мерчант подозрительный, если fraud_rate выше общего во столько раз и фродов не меньше порога
+  suspicious_merchant_lift: 2.0
+  suspicious_merchant_min_fraud_txn: 5
+  "dbt_date:time_zone": "UTC"
+
+models:
+  fraud_analytics:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +schema: staging
+      +materialized: table
+      +engine: MergeTree()
+      +tags: ["staging"]
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+      +tags: ["intermediate"]
+      # комментарии колонок в ClickHouse ставятся через ALTER TABLE, для view это не нужно
+      +persist_docs:
+        relation: false
+        columns: false
+    marts:
+      +schema: marts
+      +materialized: table
+      +engine: MergeTree()
+      +tags: ["marts"]
+
+seeds:
+  fraud_analytics:
+    +schema: seeds
+    +tags: ["seeds"]

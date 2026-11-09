@@ -1,0 +1,55 @@
+version: 2
+
+macros:
+  - name: amount_bucket
+    description: >
+      Сегментация суммы транзакции. Возвращает CASE, который раскладывает сумму по корзинам
+      micro, small, medium, large и very_large. Используется в stg_transactions.
+    arguments:
+      - name: column_name
+        type: string
+        description: Колонка или выражение с суммой.
+      - name: thresholds
+        type: list[float]
+        description: Четыре возрастающие границы корзин, по умолчанию var('amount_bucket_thresholds').
+
+  - name: safe_pct
+    description: Доля в процентах с округлением, при нулевом знаменателе возвращает 0. Используется во всех витринах.
+    arguments:
+      - name: numerator
+        type: string
+        description: Числитель.
+      - name: denominator
+        type: string
+        description: Знаменатель.
+      - name: precision
+        type: integer
+        description: Число знаков после запятой, по умолчанию 4.
+
+  - name: percentile
+    description: >
+      Перцентиль колонки через adapter.dispatch. Для ClickHouse рендерит quantileExact(q)(column),
+      для остальных баз percentile_cont(q) within group (order by column).
+    arguments:
+      - name: column_name
+        type: string
+        description: Колонка.
+      - name: quantile
+        type: float
+        description: Уровень от 0 до 1, например 0.95.
+
+  - name: haversine_distance_km
+    description: Расстояние по большому кругу между двумя точками в километрах.
+    arguments:
+      - name: lat_1
+        type: string
+        description: Широта первой точки.
+      - name: lon_1
+        type: string
+        description: Долгота первой точки.
+      - name: lat_2
+        type: string
+        description: Широта второй точки.
+      - name: lon_2
+        type: string
+        description: Долгота второй точки.

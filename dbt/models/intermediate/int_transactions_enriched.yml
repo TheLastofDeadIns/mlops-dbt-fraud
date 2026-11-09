@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: int_transactions_enriched
+    description: >
+      Транзакции из staging, дополненные справочником штатов из seed states: название штата, регион и дивизион.
+      Общий вход для всех витрин, материализуется как view.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('stg_transactions')
+    columns:
+      - name: transaction_id
+        description: Суррогатный ключ транзакции.
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+      - name: transaction_time
+        description: Дата и время транзакции.
+      - name: transaction_date
+        description: Дата транзакции.
+      - name: transaction_hour
+        description: Час транзакции, от 0 до 23.
+      - name: day_of_week
+        description: День недели по ISO, понедельник 1, воскресенье 7.
+      - name: day_name
+        description: Название дня недели.
+      - name: is_weekend
+        description: 1 для субботы и воскресенья.
+      - name: day_part
+        description: Часть суток.
+      - name: merchant_name
+        description: Название мерчанта.
+      - name: category
+        description: Категория покупки.
+      - name: amount
+        description: Сумма транзакции в долларах.
+      - name: amount_bucket
+        description: '{{ doc("amount_bucket") }}'
+      - name: is_large_amount
+        description: 1 для крупной транзакции.
+      - name: first_name
+        description: Имя клиента.
+      - name: last_name
+        description: Фамилия клиента.
+      - name: gender
+        description: Пол клиента.
+      - name: us_state
+        description: Штат клиента.
+      - name: state_name
+        description: Полное название штата из seed states.
+        data_tests:
+          - not_null
+      - name: region
+        description: Регион США по классификации Census Bureau.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Northeast", "Midwest", "South", "West"]
+      - name: division
+        description: Дивизион внутри региона.
+      - name: customer_merchant_distance_km
+        description: Расстояние от клиента до мерчанта в километрах.
+      - name: is_fraud
+        description: '{{ doc("is_fraud") }}'

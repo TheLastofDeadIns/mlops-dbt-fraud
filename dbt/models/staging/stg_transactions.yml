@@ -1,0 +1,177 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: '{{ doc("stg_transactions") }}'
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 1
+      - dbt_expectations.expect_column_mean_to_be_between:
+          arguments:
+            column_name: is_fraud
+            min_value: 0
+            max_value: 0.05
+          config:
+            severity: warn
+    columns:
+      - name: transaction_id
+        description: Суррогатный ключ транзакции, md5 от времени, мерчанта, суммы и клиента (dbt_utils.generate_surrogate_key).
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+        data_tests:
+          - not_null
+      - name: transaction_time
+        description: Дата и время транзакции.
+        data_tests:
+          - not_null
+      - name: transaction_date
+        description: Дата транзакции.
+        data_tests:
+          - not_null
+      - name: transaction_hour
+        description: Час транзакции, от 0 до 23.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 23
+      - name: day_of_week
+        description: День недели по ISO, понедельник 1, воскресенье 7 (dbt_date.day_of_week).
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+                max_value: 7
+      - name: day_name
+        description: Название дня недели (dbt_date.day_name).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+      - name: is_weekend
+        description: 1 для субботы и воскресенья.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: day_part
+        description: Часть суток, night это 22:00–05:59, morning 06–11, afternoon 12–17, evening 18–21.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["night", "morning", "afternoon", "evening"]
+      - name: merchant_name
+        description: Название мерчанта без технического префикса fraud_ из исходного датасета.
+        data_tests:
+          - not_null
+      - name: category
+        description: Категория покупки в нижнем регистре.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - entertainment
+                  - food_dining
+                  - gas_transport
+                  - grocery_net
+                  - grocery_pos
+                  - health_fitness
+                  - home
+                  - kids_pets
+                  - misc_net
+                  - misc_pos
+                  - personal_care
+                  - shopping_net
+                  - shopping_pos
+                  - travel
+      - name: amount
+        description: Сумма транзакции в долларах, округлена до центов.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: amount_bucket
+        description: '{{ doc("amount_bucket") }}'
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["micro", "small", "medium", "large", "very_large"]
+      - name: is_large_amount
+        description: 1, если сумма не меньше var('large_amount_threshold'), по умолчанию 200 долларов.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: first_name
+        description: Имя клиента.
+      - name: last_name
+        description: Фамилия клиента.
+      - name: gender
+        description: Пол клиента, M или F.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["M", "F"]
+      - name: us_state
+        description: Штат клиента, двухбуквенный код в верхнем регистре.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('states')
+                field: state_code
+      - name: customer_lat
+        description: Широта адреса клиента.
+      - name: customer_lon
+        description: Долгота адреса клиента.
+      - name: merchant_lat
+        description: Широта точки мерчанта.
+      - name: merchant_lon
+        description: Долгота точки мерчанта.
+      - name: customer_merchant_distance_km
+        description: Расстояние от адреса клиента до мерчанта в километрах (макрос haversine_distance_km).
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 20040
+      - name: is_fraud
+        description: '{{ doc("is_fraud") }}'
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+
+unit_tests:
+  - name: test_stg_transactions_cleans_and_enriches
+    description: >
+      Проверяет очистку сырой строки и вычисляемые поля: снятие префикса fraud_ у мерчанта, регистр категории,
+      пола и штата, корзину суммы из макроса amount_bucket, флаг крупной суммы, час, ISO день недели, часть суток
+      и удаление полного дубликата.
+    model: stg_transactions
+    given:
+      - input: source('transactions_db', 'transactions')
+        rows:
+          - {transaction_time: "2020-06-22 23:15:00", merch: " fraud_Kirlin and Sons", cat_id: "Personal_Care ", amount: 5.5, name_1: "Jeff", name_2: "Elliott", gender: "m", us_state: "sc", lat: 33.9659, lon: -80.9355, merchant_lat: 33.9864, merchant_lon: -81.2007, target: 0}
+          - {transaction_time: "2020-06-22 23:15:00", merch: " fraud_Kirlin and Sons", cat_id: "Personal_Care ", amount: 5.5, name_1: "Jeff", name_2: "Elliott", gender: "m", us_state: "sc", lat: 33.9659, lon: -80.9355, merchant_lat: 33.9864, merchant_lon: -81.2007, target: 0}
+          - {transaction_time: "2020-06-27 10:05:00", merch: "fraud_Sporer-Keebler", cat_id: "travel", amount: 1200.456, name_1: "Joanne", name_2: "Williams", gender: "F", us_state: "UT", lat: 40.3207, lon: -110.436, merchant_lat: 39.4505, merchant_lon: -109.9604, target: 1}
+          - {transaction_time: "2020-06-24 14:00:00", merch: "fraud_Haley Group", cat_id: "misc_pos", amount: 200, name_1: "Joanne", name_2: "Williams", gender: "F", us_state: "UT", lat: 40.3207, lon: -110.436, merchant_lat: 40.1, merchant_lon: -110.2, target: 0}
+    expect:
+      rows:
+        - {merchant_name: "Kirlin and Sons", category: "personal_care", gender: "M", us_state: "SC", amount: 5.5, amount_bucket: "micro", is_large_amount: 0, transaction_hour: 23, day_of_week: 1, day_name: "Monday", is_weekend: 0, day_part: "night", is_fraud: 0}
+        - {merchant_name: "Sporer-Keebler", category: "travel", gender: "F", us_state: "UT", amount: 1200.46, amount_bucket: "very_large", is_large_amount: 1, transaction_hour: 10, day_of_week: 6, day_name: "Saturday", is_weekend: 1, day_part: "morning", is_fraud: 1}
+        - {merchant_name: "Haley Group", category: "misc_pos", gender: "F", us_state: "UT", amount: 200, amount_bucket: "large", is_large_amount: 1, transaction_hour: 14, day_of_week: 3, day_name: "Wednesday", is_weekend: 0, day_part: "afternoon", is_fraud: 0}

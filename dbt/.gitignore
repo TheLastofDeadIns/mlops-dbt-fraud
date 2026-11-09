@@ -1,0 +1,10 @@
+target/
+dbt_packages/
+logs/
+.user.yml
+.venv/
+__pycache__/
+*.py[cod]
+data/
+*.csv
+!seeds/*.csv
